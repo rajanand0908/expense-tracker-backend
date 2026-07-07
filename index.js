@@ -1,33 +1,69 @@
-const express = require('express');
-const db = require('./database');
+const express = require("express");
+const { v4: uuidv4 } = require("uuid");
+const db = require("./database");
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
 // GET all expenses
-app.get('/expenses', (req, res) => {
-  const expenses = db.prepare('SELECT * FROM expenses').all();
-  res.json(expenses);
+app.get("/expenses", async (req, res) => {
+  try {
+    const result = await db.query(
+      "SELECT * FROM expenses ORDER BY date DESC"
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
-const { v4: uuidv4 } = require('uuid');
+// POST expense
+app.post("/expenses", async (req, res) => {
+  try {
+    const { amount, category, date, note, userId } = req.body;
 
-app.post('/expenses', (req, res) => {
-  const { amount, category, date, note, userId } = req.body;
-  const id = uuidv4();
-  const stmt = db.prepare(
-    'INSERT INTO expenses (id, amount, category, date, note, userId) VALUES (?, ?, ?, ?, ?, ?)'
-  );
-  stmt.run(id, amount, category, date, note, userId);
-  res.json({ id, amount, category, date, note, userId });
+    const id = uuidv4();
+
+    await db.query(
+      `INSERT INTO expenses
+      (id, amount, category, date, note, userId)
+      VALUES ($1,$2,$3,$4,$5,$6)`,
+      [id, amount, category, date, note, userId]
+    );
+
+    res.json({
+      id,
+      amount,
+      category,
+      date,
+      note,
+      userId,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// DELETE expense by id
-app.delete('/expenses/:id', (req, res) => {
-  const stmt = db.prepare('DELETE FROM expenses WHERE id = ?');
-  stmt.run(req.params.id);
-  res.json({ deleted: req.params.id });
+// DELETE expense
+app.delete("/expenses/:id", async (req, res) => {
+  try {
+    await db.query(
+      "DELETE FROM expenses WHERE id=$1",
+      [req.params.id]
+    );
+
+    res.json({
+      deleted: req.params.id,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.listen(PORT, () => {

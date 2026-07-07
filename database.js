@@ -1,17 +1,32 @@
-const Database = require('better-sqlite3');
-const db = new Database('expenses.db');
+const { Pool } = require("pg");
 
-db.exec(`DROP TABLE IF EXISTS expenses`);
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS expenses (
-    id TEXT PRIMARY KEY,
-    amount REAL NOT NULL,
-    category TEXT,
-    date TEXT,
-    note TEXT,
-    userId TEXT
-  )
-`);
+// Create table if it doesn't exist
+async function initializeDatabase() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS expenses (
+        id UUID PRIMARY KEY,
+        amount DOUBLE PRECISION NOT NULL,
+        category TEXT,
+        date TEXT,
+        note TEXT,
+        userId TEXT
+      );
+    `);
 
-module.exports = db;
+    console.log("✅ PostgreSQL connected");
+  } catch (err) {
+    console.error("Database initialization failed:", err);
+  }
+}
+
+initializeDatabase();
+
+module.exports = pool;
