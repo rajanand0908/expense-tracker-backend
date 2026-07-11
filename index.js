@@ -7,6 +7,16 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
+const authenticate = (req, res, next) => {
+    const apiKey = req.header("x-api-key");
+
+    if (!apiKey || apiKey !== process.env.API_KEY) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    next();
+};
+
 // GET all expenses
 app.get("/expenses", async (req, res) => {
   try {
@@ -22,7 +32,7 @@ app.get("/expenses", async (req, res) => {
 });
 
 // POST expense
-app.post("/expenses", async (req, res) => {
+app.post('/expenses', authenticate, async (req, res) => {
   try {
     const { amount, category, date, note, userId } = req.body;
 
@@ -50,7 +60,7 @@ app.post("/expenses", async (req, res) => {
 });
 
 // DELETE expense
-app.delete("/expenses/:id", async (req, res) => {
+app.delete('/expenses/:id', authenticate, async (req, res) => {
   try {
     await db.query(
       "DELETE FROM expenses WHERE id=$1",
