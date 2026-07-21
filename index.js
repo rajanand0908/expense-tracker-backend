@@ -17,13 +17,12 @@ const authenticate = (req, res, next) => {
     next();
 };
 
-// GET all expenses
-app.get("/expenses", async (req, res) => {
+// GET all transactions
+app.get('/transactions', async (req, res) => {
   try {
     const result = await db.query(
-      "SELECT * FROM expenses ORDER BY date DESC"
+      'SELECT * FROM transactions ORDER BY date DESC'
     );
-
     res.json(result.rows);
   } catch (err) {
     console.error(err);
@@ -31,45 +30,31 @@ app.get("/expenses", async (req, res) => {
   }
 });
 
-// POST expense
-app.post('/expenses', authenticate, async (req, res) => {
+// POST transaction
+app.post('/transactions', authenticate, async (req, res) => {
   try {
-    const { amount, category, date, note, userId } = req.body;
-
-    const id = uuidv4();
-
+    const { id, amount, type, categoryID, accountID, paymentMethod, note, date, createdAt, updatedAt, isDeleted, userId } = req.body;
     await db.query(
-      `INSERT INTO expenses
-      (id, amount, category, date, note, userId)
-      VALUES ($1,$2,$3,$4,$5,$6)`,
-      [id, amount, category, date, note, userId]
+      `INSERT INTO transactions
+      (id, amount, type, categoryID, accountID, paymentMethod, note, date, createdAt, updatedAt, isDeleted, userId)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+      [id, amount, type, categoryID, accountID, paymentMethod, note, date, createdAt, updatedAt, isDeleted, userId]
     );
-
-    res.json({
-      id,
-      amount,
-      category,
-      date,
-      note,
-      userId,
-    });
+    res.json({ id, amount, type, categoryID, accountID, paymentMethod, note, date, createdAt, updatedAt, isDeleted, userId });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// DELETE expense
-app.delete('/expenses/:id', authenticate, async (req, res) => {
+// DELETE transaction
+app.delete('/transactions/:id', authenticate, async (req, res) => {
   try {
     await db.query(
-      "DELETE FROM expenses WHERE id=$1",
+      'DELETE FROM transactions WHERE id=$1',
       [req.params.id]
     );
-
-    res.json({
-      deleted: req.params.id,
-    });
+    res.json({ deleted: req.params.id });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
